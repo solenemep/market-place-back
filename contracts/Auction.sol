@@ -65,7 +65,6 @@ contract Auction is ERC20, Ownable {
         require(signer == bid.bidder, "Auction : bidder did not sign this transaction");
         require(bid.value >= bid.voucher.price, "Auction : payment must be higher than minimum price");
         require(bid.amount <= bid.voucher.supply, "Auction : can not buy more than stock");
-        _place.mintAndTransfer(bid.bidder, bid.amount, bid.voucher);
 
         // charges bid amount from buyer's wallet
         // redirects bid amount to seller wallet
@@ -74,7 +73,7 @@ contract Auction is ERC20, Ownable {
         transferFrom(bid.bidder, bid.voucher.creator, bid.value);
         uint256 charges = bid.value.mul(5).div(100);
         transfer(owner(), charges);
-
+        _place.mintAndTransfer(bid.bidder, bid.amount, bid.voucher);
         emit BidAccepted(msg.sender, bid.voucher.tokenId);
     }
 
