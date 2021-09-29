@@ -11,11 +11,9 @@ contract Signature is EIP712 {
 
     bytes32 private constant _EIP712DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 private constant _VOUCHER_TYPEHASH =
-        keccak256("Voucher(uint tokenId,address creator,uint256 supply,uint256 price)");
     bytes32 private constant _BID_TYPEHASH =
         keccak256(
-            "Bid(Voucher voucher,address bidder,uint256 amount,uint256 value)Voucher(uint tokenId,address creator,uint256 supply,uint256 price)"
+            "Bid(uint256 tokenId,address creator,uint256 supply,uint256 price,address bidder,uint256 amount,uint256 value)"
         );
     bytes32 private _DOMAIN_SEPARATOR;
 
@@ -26,16 +24,11 @@ contract Signature is EIP712 {
         address verifyingContract;
     }
 
-    struct Voucher {
+    struct Bid {
         uint256 tokenId;
         address creator;
         uint256 supply;
         uint256 price;
-        bytes signature;
-    }
-
-    struct Bid {
-        Voucher voucher;
         address bidder;
         uint256 amount;
         uint256 value;
@@ -66,29 +59,20 @@ contract Signature is EIP712 {
             );
     }
 
-    function _hashVoucher(Voucher calldata voucher) internal pure returns (bytes32) {
-        return
-            keccak256(abi.encode(_VOUCHER_TYPEHASH, voucher.tokenId, voucher.creator, voucher.supply, voucher.price));
-    }
-
     function _hashBid(Bid calldata bid) internal pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(
                     _BID_TYPEHASH,
-                    keccak256(
-                        abi.encode(bid.voucher.tokenId, bid.voucher.creator, bid.voucher.supply, bid.voucher.price)
-                    ),
+                    bid.tokenId,
+                    bid.creator,
+                    bid.supply,
+                    bid.price,
                     bid.bidder,
                     bid.amount,
                     bid.value
                 )
             );
-    }
-
-    function verifyVoucher(Voucher calldata voucher) external view returns (address) {
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", _DOMAIN_SEPARATOR, _hashVoucher(voucher)));
-        return digest.recover(voucher.signature);
     }
 
     function verifyBid(Bid calldata bid) external view returns (address) {

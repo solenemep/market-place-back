@@ -34,7 +34,7 @@ contract Auction is ERC20, Ownable {
     }
 
     modifier isCreator(Signature.Bid calldata bid) {
-        require(bid.voucher.creator == msg.sender, "Auction : not creator");
+        require(bid.creator == msg.sender, "Auction : not creator");
         _;
     }
 
@@ -63,24 +63,24 @@ contract Auction is ERC20, Ownable {
     function acceptBid(Signature.Bid calldata bid) public isCreator(bid) {
         address signer = _signature.verifyBid(bid);
         require(signer == bid.bidder, "Auction : bidder did not sign this transaction");
-        require(bid.value >= bid.voucher.price, "Auction : payment must be higher than minimum price");
-        require(bid.amount <= bid.voucher.supply, "Auction : can not buy more than stock");
+        require(bid.value >= bid.price, "Auction : payment must be higher than minimum price");
+        require(bid.amount <= bid.supply, "Auction : can not buy more than stock");
 
         // charges bid amount from buyer's wallet
         // redirects bid amount to seller wallet
         // charges gas fee for transaction from seller => paid accepting bid (msg.sender)
         // charges 5% service fee of bid price => to OWNER of contrat
-        transferFrom(bid.bidder, bid.voucher.creator, bid.value);
+        transferFrom(bid.bidder, bid.creator, bid.value);
         uint256 charges = bid.value.mul(5).div(100);
         transfer(owner(), charges);
-        _place.mintAndTransfer(bid.bidder, bid.amount, bid.voucher);
-        emit BidAccepted(msg.sender, bid.voucher.tokenId);
+        _place.mintAndTransfer(bid.tokenId, bid.creator, bid.bidder, bid.amount);
+        emit BidAccepted(msg.sender, bid.tokenId);
     }
 
     function declineBid(Signature.Bid calldata bid) public isCreator(bid) {
-        //address signer = _signature.verifyBid(bid);
-        //require(signer == bid.bidder, "Auction : bidder did not sign this transaction");
-        emit BidDeclined(msg.sender, bid.voucher.tokenId);
+        address signer = _signature.verifyBid(bid);
+        require(signer == bid.bidder, "Auction : bidder did not sign this transaction");
+        emit BidDeclined(msg.sender, bid.tokenId);
     }
 
     function signature() public view returns (Signature) {

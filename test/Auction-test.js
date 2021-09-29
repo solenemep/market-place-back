@@ -6,12 +6,10 @@
 const { expect } = require('chai');
 const { BigNumber } = require('ethers');
 const { ethers } = require('hardhat');
-const { getDomain, typesVoucher, typesBid } = require('../library/Signature');
 
 describe('Auction', async function () {
   let Auction, auction, Place, place, Signature, signature;
-  let deployer, owner, developer, alice, bob;
-  let voucherSigner, bidSigner;
+  let deployer, owner, developer, creator, bidder, alice, bob;
 
   const URI = 'ipfs://{id}';
   const NAME = 'WrappedEther';
@@ -21,12 +19,12 @@ describe('Auction', async function () {
   const GAS_PRICE = 1000000000;
 
   beforeEach(async function () {
-    [deployer, owner, developer, alice, bob, voucherSigner, bidSigner] = await ethers.getSigners();
+    [deployer, owner, developer, creator, bidder, alice, bob] = await ethers.getSigners();
     Signature = await ethers.getContractFactory('Signature');
     signature = await Signature.connect(deployer).deploy();
     await signature.deployed();
     Place = await ethers.getContractFactory('Place');
-    place = await Place.connect(deployer).deploy(URI, signature.address);
+    place = await Place.connect(deployer).deploy(URI);
     await place.deployed();
     Auction = await ethers.getContractFactory('Auction');
     auction = await Auction.connect(developer).deploy(place.address, signature.address, owner.address);
@@ -96,11 +94,9 @@ describe('Auction', async function () {
     });
   });
   describe('bid functions', async function () {
-    let voucherSignerAddress,
-      voucher,
-      signatureVoucher,
-      signedVoucher,
-      bidSignerAddress,
+    let creatorAddress,
+      bidderAddress,
+      aliceAddress,
       bid1,
       bid2,
       bid3,
@@ -124,59 +120,92 @@ describe('Auction', async function () {
     const VALUE_KO = 5;
 
     beforeEach(async function () {
-      // CREATION OF VOUCHER
-      voucherSignerAddress = voucherSigner.address;
-      voucher = { tokenId: TOKENID, creator: voucherSignerAddress, supply: SUPPLY, price: PRICE };
-      signatureVoucher =
-        '0x55aed0833d1add1a40e8982a4c6de674a6cceb37002e0a8e463feb40f82e30f7437c0418c3eba16edab65692557b3ca9449b06e7916bd9efae72acc646ee186e1c';
-      signedVoucher = { ...voucher, signature: signatureVoucher };
+      creatorAddress = creator.address;
+      bidderAddress = bidder.address;
+      aliceAddress = alice.address;
 
       // CREATION OF BID1 => VALID
-      bidSignerAddress = bidSigner.address;
-      bid1 = { voucher: signedVoucher, bidder: bidSignerAddress, amount: AMOUNT_OK, value: VALUE_OK };
+      bid1 = {
+        tokenId: TOKENID,
+        creator: creatorAddress,
+        supply: SUPPLY,
+        price: PRICE,
+        bidder: bidderAddress,
+        amount: AMOUNT_OK,
+        value: VALUE_OK,
+      };
       signatureBid1 =
         '0x55aed0833d1add1a40e8982a4c6de674a6cceb37002e0a8e463feb40f82e30f7437c0418c3eba16edab65692557b3ca9449b06e7916bd9efae72acc646ee186e1c';
       signedBid1 = { ...bid1, signature: signatureBid1 };
 
       // CREATION OF BID2 => INVALID (amount KO)
-      bid2 = { voucher: signedVoucher, bidder: bidSignerAddress, amount: AMOUNT_KO, value: VALUE_OK };
+      bid2 = {
+        tokenId: TOKENID,
+        creator: creatorAddress,
+        supply: SUPPLY,
+        price: PRICE,
+        bidder: bidderAddress,
+        amount: AMOUNT_KO,
+        value: VALUE_OK,
+      };
       signatureBid2 =
         '0x55aed0833d1add1a40e8982a4c6de674a6cceb37002e0a8e463feb40f82e30f7437c0418c3eba16edab65692557b3ca9449b06e7916bd9efae72acc646ee186e1c';
       signedBid2 = { ...bid2, signature: signatureBid2 };
 
       // CREATION OF BID3 => INVALID (value KO)
-      bid3 = { voucher: signedVoucher, bidder: bidSignerAddress, amount: AMOUNT_OK, value: VALUE_KO };
+      bid3 = {
+        tokenId: TOKENID,
+        creator: creatorAddress,
+        supply: SUPPLY,
+        price: PRICE,
+        bidder: bidderAddress,
+        amount: AMOUNT_OK,
+        value: VALUE_KO,
+      };
       signatureBid3 =
         '0x55aed0833d1add1a40e8982a4c6de674a6cceb37002e0a8e463feb40f82e30f7437c0418c3eba16edab65692557b3ca9449b06e7916bd9efae72acc646ee186e1c';
       signedBid3 = { ...bid3, signature: signatureBid3 };
 
       // CREATION OF BID4 => INVALID (signer is not bidder)
-      bid4 = { voucher: signedVoucher, bidder: bidSignerAddress, amount: AMOUNT_OK, value: VALUE_KO };
+      bid4 = {
+        tokenId: TOKENID,
+        creator: creatorAddress,
+        supply: SUPPLY,
+        price: PRICE,
+        bidder: aliceAddress,
+        amount: AMOUNT_OK,
+        value: VALUE_OK,
+      };
       signatureBid4 =
         '0x55aed0833d1add1a40e8982a4c6de674a6cceb37002e0a8e463feb40f82e30f7437c0418c3eba16edab65692557b3ca9449b06e7916bd9efae72acc646ee186e1c';
       signedBid4 = { ...bid4, signature: signatureBid4 };
 
       // PREPARE WETH
-      await auction.connect(bidSigner).deposit({ value: VALUE, gasPrice: GAS_PRICE });
-      await auction.connect(bidSigner).approve(voucherSigner.address, VALUE_OK);
+      await auction.connect(bidder).deposit({ value: VALUE, gasPrice: GAS_PRICE });
+      await auction.connect(bidder).approve(creator.address, VALUE_OK);
     });
 
     describe('acceptBid', async function () {
+      it(`reverts if not creator`, async function () {
+        await expect(auction.connect(alice).acceptBid(signedBid1)).to.be.revertedWith('Auction : not creator');
+      });
       it(`verifies signature bid`, async function () {
         // SEE ./Signature-test.js
       });
       it(`reverts if signer is not bidder`, async function () {
-        await expect(auction.connect(voucherSigner).acceptBid(signedBid1)).to.be.revertedWith(
+        await auction.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE });
+        await auction.connect(alice).approve(creator.address, VALUE_OK);
+        await expect(auction.connect(creator).acceptBid(signedBid4)).to.be.revertedWith(
           'Auction : bidder did not sign this transaction'
         );
       });
       it(`reverts if bid value is lower than voucher price`, async function () {
-        await expect(auction.connect(voucherSigner).acceptBid(signedBid3)).to.be.revertedWith(
+        await expect(auction.connect(creator).acceptBid(signedBid3)).to.be.revertedWith(
           'Auction : payment must be higher than minimum price'
         );
       });
       it(`reverts if bid amount is lower than voucher supply`, async function () {
-        await expect(auction.connect(voucherSigner).acceptBid(signedBid2)).to.be.revertedWith(
+        await expect(auction.connect(creator).acceptBid(signedBid2)).to.be.revertedWith(
           'Auction : can not buy more than stock'
         );
       });
@@ -185,45 +214,48 @@ describe('Auction', async function () {
       });
       describe(`changes WETH balances`, async function () {
         it(`charges bid amount to buyer`, async function () {
-          const initialBalance = await auction.balanceOf(bidSigner.address);
-          await auction.connect(voucherSigner).acceptBid(signedBid1);
-          expect(await auction.balanceOf(bidSigner.address)).to.equals(initialBalance - VALUE_OK);
+          const initialBalance = await auction.balanceOf(bidder.address);
+          await auction.connect(creator).acceptBid(signedBid1);
+          expect(await auction.balanceOf(bidder.address)).to.equals(initialBalance - VALUE_OK);
         });
         it(`redirects bid amount to seller`, async function () {
-          const initialBalance = await auction.balanceOf(voucherSigner.address);
-          await auction.connect(voucherSigner).acceptBid(signedBid1);
-          expect(await auction.balanceOf(voucherSigner.address)).to.equals(initialBalance + VALUE_OK_MINUS_5PERC);
+          const initialBalance = await auction.balanceOf(creator.address);
+          await auction.connect(creator).acceptBid(signedBid1);
+          expect(await auction.balanceOf(creator.address)).to.equals(initialBalance + VALUE_OK_MINUS_5PERC);
         });
         it(`charges gas fee for transaction to seller`, async function () {
-          const tx = await auction.connect(voucherSigner).acceptBid(signedBid1, { gasPrice: GAS_PRICE });
-          expect(tx).to.changeEtherBalance(voucherSigner, 0, { includeFee: true });
+          const tx = await auction.connect(creator).acceptBid(signedBid1, { gasPrice: GAS_PRICE });
+          expect(tx).to.changeEtherBalance(creator, 0, { includeFee: true });
         });
         it(`charges 5% fees from seller to owner`, async function () {
           const initialBalance = await auction.balanceOf(owner.address);
-          await auction.connect(voucherSigner).acceptBid(signedBid1);
+          await auction.connect(creator).acceptBid(signedBid1);
           expect(await auction.balanceOf(owner.address)).to.equals(initialBalance + VALUE_OK - VALUE_OK_MINUS_5PERC);
         });
       });
       it(`emits BidAccepted event`, async function () {
-        await expect(auction.connect(voucherSigner).acceptBid(signedBid1))
+        await expect(auction.connect(creator).acceptBid(signedBid1))
           .to.emit(auction, 'BidAccepted')
-          .withArgs(voucherSigner.address, signedBid1.voucher.tokenId.toString());
+          .withArgs(creator.address, signedBid1.tokenId.toString());
       });
     });
 
     describe('declineBid', async function () {
+      it(`reverts if not creator`, async function () {
+        await expect(auction.connect(alice).declineBid(signedBid1)).to.be.revertedWith('Auction : not creator');
+      });
       it(`verifies signature bid`, async function () {
         // SEE ./Signature-test.js
       });
       it(`reverts if signer is not bidder`, async function () {
-        await expect(auction.connect(voucherSigner).declineBid(signedBid4)).to.be.revertedWith(
+        await expect(auction.connect(creator).declineBid(signedBid4)).to.be.revertedWith(
           'Auction : bidder did not sign this transaction'
         );
       });
       it(`emits BidDeclined event`, async function () {
-        await expect(auction.connect(voucherSigner).declineBid(signedBid1))
+        await expect(auction.connect(creator).declineBid(signedBid1))
           .to.emit(auction, 'BidDeclined')
-          .withArgs(voucherSigner.address, signedBid1.voucher.tokenId.toString());
+          .withArgs(creator.address, signedBid1.tokenId.toString());
       });
     });
   });

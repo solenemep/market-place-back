@@ -12,24 +12,12 @@ const DOMAIN_TYPE = [
   { name: 'verifyingContract', type: 'address' },
 ];
 
-const VOUCHER_TYPE = {
-  Voucher: [
-    { name: 'tokenId', type: 'uint256' },
-    { name: 'creator', type: 'address' },
-    { name: 'supply', type: 'uint256' },
-    { name: 'price', type: 'uint256' },
-  ],
-};
-
 const BID_TYPE = {
-  Voucher: [
+  Bid: [
     { name: 'tokenId', type: 'uint256' },
     { name: 'creator', type: 'address' },
     { name: 'supply', type: 'uint256' },
     { name: 'price', type: 'uint256' },
-  ],
-  Bid: [
-    { name: 'voucher', type: 'Voucher' },
     { name: 'bidder', type: 'address' },
     { name: 'amount', type: 'uint256' },
     { name: 'value', type: 'uint256' },
@@ -45,19 +33,6 @@ const getDomainData = async (contractAddress) => {
     version: SIGNING_DOMAIN_VERSION,
     chainId: 4,
     verifyingContract: contractAddress,
-  };
-};
-
-const createTypeDataVoucher = async (contractAddress, voucher) => {
-  const domainData = await getDomainData(contractAddress);
-  return {
-    types: {
-      EIP712Domain: DOMAIN_TYPE,
-      Voucher: VOUCHER_TYPE,
-    },
-    domain: domainData,
-    primaryType: 'Voucher',
-    message: voucher,
   };
 };
 
@@ -83,6 +58,5 @@ const signTypedData = async (web3, from, data) => {
   });
 };
 
-exports.createTypeDataVoucher = createTypeDataVoucher;
 exports.createTypeDataBid = createTypeDataBid;
 exports.signTypedData = signTypedData;
