@@ -1,1 +1,14 @@
-{"Greeter":{"kovan":{"address":"0x21E83e6136CE6763eCdF4f342897b2Fa2E31156b"}}}
+{
+  "Signature": {
+    "rinkeby": { "address": "0xB814DB29E1D196137407E9e2402bA880bE04df42" },
+    "BSCtestnet": { "address": "0xB814DB29E1D196137407E9e2402bA880bE04df42" }
+  },
+  "Place": {
+    "rinkeby": { "address": "0xea90AaaBB40E8A48766c0bFc2dD155fCfFD09B1b" },
+    "BSCtestnet": { "address": "0xea90AaaBB40E8A48766c0bFc2dD155fCfFD09B1b" }
+  },
+  "Auction": {
+    "rinkeby": { "address": "0x234eb0474C919e9B0353C7A1a675DDcDDcb25A79" },
+    "BSCtestnet": { "address": "0x234eb0474C919e9B0353C7A1a675DDcDDcb25A79" }
+  }
+}

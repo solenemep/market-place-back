@@ -7,10 +7,8 @@ async function main() {
   const [deployer, owner, developer] = await ethers.getSigners();
   console.log('Deploying contracts with the account:', deployer.address);
 
-  const signatureAddress = await getContract('Signature', 'rinkeby');
-
   const Place = await hre.ethers.getContractFactory('Place');
-  const place = await Place.deploy('ipfs://{id}', signatureAddress);
+  const place = await Place.deploy('ipfs://{id}');
 
   await place.deployed();
 
