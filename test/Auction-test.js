@@ -112,12 +112,12 @@ describe('Auction', async function () {
 
     const TOKENID = BigNumber.from('0');
     const SUPPLY = BigNumber.from('10');
-    const PRICE = 10;
+    const PRICE = 1;
     const AMOUNT_OK = BigNumber.from('5');
     const AMOUNT_KO = BigNumber.from('15');
     const VALUE_OK = 20;
     const VALUE_OK_MINUS_5PERC = 19;
-    const VALUE_KO = 5;
+    const VALUE_KO = 4;
 
     beforeEach(async function () {
       creatorAddress = creator.address;
@@ -199,7 +199,7 @@ describe('Auction', async function () {
           'Auction : bidder did not sign this transaction'
         );
       });
-      it(`reverts if bid value is lower than voucher price`, async function () {
+      it(`reverts if bid value is lower than voucher price * amount`, async function () {
         await expect(auction.connect(creator).acceptBid(signedBid3)).to.be.revertedWith(
           'Auction : payment must be higher than minimum price'
         );

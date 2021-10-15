@@ -21,7 +21,7 @@ contract Auction is ERC20, Ownable {
     event Deposited(address indexed sender, uint256 amount);
     event Withdrawed(address indexed sender, uint256 amount);
     event BidAccepted(address indexed sender, uint256 tokenId);
-    event BidDeclined(address indexed sender, uint256 bid);
+    event BidDeclined(address indexed sender, uint256 tokenId);
 
     constructor(
         address placeAddress,
@@ -63,7 +63,7 @@ contract Auction is ERC20, Ownable {
     function acceptBid(Signature.Bid calldata bid) public isCreator(bid) {
         address signer = _signature.verifyBid(bid);
         require(signer == bid.bidder, "Auction : bidder did not sign this transaction");
-        require(bid.value >= bid.price, "Auction : payment must be higher than minimum price");
+        require(bid.value >= bid.price * bid.amount, "Auction : payment must be higher than minimum price");
         require(bid.amount <= bid.supply, "Auction : can not buy more than stock");
 
         // charges bid amount from buyer's wallet

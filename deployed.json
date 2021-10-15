@@ -8,7 +8,7 @@
     "BSCtestnet": { "address": "0xea90AaaBB40E8A48766c0bFc2dD155fCfFD09B1b" }
   },
   "Auction": {
-    "rinkeby": { "address": "0x234eb0474C919e9B0353C7A1a675DDcDDcb25A79" },
-    "BSCtestnet": { "address": "0x234eb0474C919e9B0353C7A1a675DDcDDcb25A79" }
+    "rinkeby": { "address": "0xf3428306Ad2113C7F6b03a626833e8aFb45708cA" },
+    "BSCtestnet": { "address": "0x65629162605F4c15087f14135d9427d87D3546C3" }
   }
 }
