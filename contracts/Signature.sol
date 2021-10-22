@@ -35,12 +35,12 @@ contract Signature is EIP712 {
         bytes signature;
     }
 
-    constructor() EIP712(_SIGNING_DOMAIN, _SIGNATURE_VERSION) {
+    constructor(uint256 chain) EIP712(_SIGNING_DOMAIN, _SIGNATURE_VERSION) {
         _DOMAIN_SEPARATOR = _hashDomain(
             EIP712Domain({
                 name: _SIGNING_DOMAIN,
                 version: _SIGNATURE_VERSION,
-                chainId: 4,
+                chainId: chain,
                 verifyingContract: address(this)
             })
         );

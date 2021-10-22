@@ -8,7 +8,7 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
 
   const Signature = await hre.ethers.getContractFactory('Signature');
-  const signature = await Signature.deploy();
+  const signature = await Signature.deploy(97);
 
   await signature.deployed();
 

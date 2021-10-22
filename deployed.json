@@ -1,14 +1,14 @@
 {
   "Signature": {
     "rinkeby": { "address": "0xB814DB29E1D196137407E9e2402bA880bE04df42" },
-    "BSCtestnet": { "address": "0xB814DB29E1D196137407E9e2402bA880bE04df42" }
+    "BSCtestnet": { "address": "0xABb332525EB4A3CA8B586BC78DeE5f95A954dF7a" }
   },
   "Place": {
     "rinkeby": { "address": "0xea90AaaBB40E8A48766c0bFc2dD155fCfFD09B1b" },
-    "BSCtestnet": { "address": "0xea90AaaBB40E8A48766c0bFc2dD155fCfFD09B1b" }
+    "BSCtestnet": { "address": "0xf94059430dD4B4fDB038008A07c915CA0Bf2F290" }
   },
   "Auction": {
     "rinkeby": { "address": "0xf3428306Ad2113C7F6b03a626833e8aFb45708cA" },
-    "BSCtestnet": { "address": "0x65629162605F4c15087f14135d9427d87D3546C3" }
+    "BSCtestnet": { "address": "0xB5AaC99d6B2ed20C07c9E97c13F34269a3B65E70" }
   }
 }

@@ -21,7 +21,7 @@ describe('Auction', async function () {
   beforeEach(async function () {
     [deployer, owner, developer, creator, bidder, alice, bob] = await ethers.getSigners();
     Signature = await ethers.getContractFactory('Signature');
-    signature = await Signature.connect(deployer).deploy();
+    signature = await Signature.connect(deployer).deploy(97);
     await signature.deployed();
     Place = await ethers.getContractFactory('Place');
     place = await Place.connect(deployer).deploy(URI);

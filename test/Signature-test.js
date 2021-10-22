@@ -22,7 +22,7 @@ describe('Signature', async function () {
   beforeEach(async function () {
     [deployer, owner, developer, creator, bidder] = await ethers.getSigners();
     Signature = await ethers.getContractFactory('Signature');
-    signature = await Signature.connect(deployer).deploy();
+    signature = await Signature.connect(deployer).deploy(97);
     await signature.deployed();
 
     // CREATION OF BID
