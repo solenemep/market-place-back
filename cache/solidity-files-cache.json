@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/solenepettier/Desktop/sacred-place/contracts/Auction.sol": {
-      "lastModificationDate": 1634296714907,
-      "contentHash": "93f4a026a22968cfc2c337b53155227a",
+      "lastModificationDate": 1634902790842,
+      "contentHash": "d54112b2eb1a5321a3bb793a97c494fa",
       "sourceName": "contracts/Auction.sol",
       "solcConfig": {
         "version": "0.8.0",
@@ -271,8 +271,8 @@
       ]
     },
     "/Users/solenepettier/Desktop/sacred-place/contracts/Signature.sol": {
-      "lastModificationDate": 1634892801671,
-      "contentHash": "e51efc79dcf5dd10926b370fff78e499",
+      "lastModificationDate": 1634902998800,
+      "contentHash": "59546ed43f959a5ccf8670426277cdcd",
       "sourceName": "contracts/Signature.sol",
       "solcConfig": {
         "version": "0.8.0",

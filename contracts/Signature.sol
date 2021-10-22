@@ -32,7 +32,6 @@ contract Signature is EIP712 {
         address bidder;
         uint256 amount;
         uint256 value;
-        bytes signature;
     }
 
     constructor(uint256 chain) EIP712(_SIGNING_DOMAIN, _SIGNATURE_VERSION) {
@@ -75,8 +74,13 @@ contract Signature is EIP712 {
             );
     }
 
-    function verifyBid(Bid calldata bid) external view returns (address) {
+    function verifyBid(
+        Bid calldata bid,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external view returns (bool) {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", _DOMAIN_SEPARATOR, _hashBid(bid)));
-        return digest.recover(bid.signature);
+        return ecrecover(digest, v, r, s) == bid.bidder && ecrecover(digest, v, r, s) != address(0);
     }
 }

@@ -60,9 +60,13 @@ contract Auction is ERC20, Ownable {
         emit Withdrawed(msg.sender, amount);
     }
 
-    function acceptBid(Signature.Bid calldata bid) public isCreator(bid) {
-        address signer = _signature.verifyBid(bid);
-        require(signer == bid.bidder, "Auction : bidder did not sign this transaction");
+    function acceptBid(
+        Signature.Bid calldata bid,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public isCreator(bid) {
+        require(_signature.verifyBid(bid, v, r, s), "Auction : bidder did not sign this transaction");
         require(bid.value >= bid.price * bid.amount, "Auction : payment must be higher than minimum price");
         require(bid.amount <= bid.supply, "Auction : can not buy more than stock");
 
@@ -77,9 +81,13 @@ contract Auction is ERC20, Ownable {
         emit BidAccepted(msg.sender, bid.tokenId);
     }
 
-    function declineBid(Signature.Bid calldata bid) public isCreator(bid) {
-        address signer = _signature.verifyBid(bid);
-        require(signer == bid.bidder, "Auction : bidder did not sign this transaction");
+    function declineBid(
+        Signature.Bid calldata bid,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public isCreator(bid) {
+        require(_signature.verifyBid(bid, v, r, s), "Auction : bidder did not sign this transaction");
         emit BidDeclined(msg.sender, bid.tokenId);
     }
 

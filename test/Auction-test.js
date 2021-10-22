@@ -94,21 +94,7 @@ describe('Auction', async function () {
     });
   });
   describe('bid functions', async function () {
-    let creatorAddress,
-      bidderAddress,
-      aliceAddress,
-      bid1,
-      bid2,
-      bid3,
-      bid4,
-      signatureBid1,
-      signatureBid2,
-      signatureBid3,
-      signatureBid4,
-      signedBid1,
-      signedBid2,
-      signedBid3,
-      signedBid4;
+    let creatorAddress, bidderAddress, aliceAddress, bid1, bid2, bid3, bid4;
 
     const TOKENID = BigNumber.from('0');
     const SUPPLY = BigNumber.from('10');
@@ -118,6 +104,10 @@ describe('Auction', async function () {
     const VALUE_OK = 20;
     const VALUE_OK_MINUS_5PERC = 19;
     const VALUE_KO = 4;
+
+    const v = 1;
+    const r = 0x0000000000000000000000000000000000000000000000000000000061626364;
+    const s = 0x0000000000000000000000000000000000000000000000000000000061626364;
 
     beforeEach(async function () {
       creatorAddress = creator.address;
@@ -134,9 +124,6 @@ describe('Auction', async function () {
         amount: AMOUNT_OK,
         value: VALUE_OK,
       };
-      signatureBid1 =
-        '0x55aed0833d1add1a40e8982a4c6de674a6cceb37002e0a8e463feb40f82e30f7437c0418c3eba16edab65692557b3ca9449b06e7916bd9efae72acc646ee186e1c';
-      signedBid1 = { ...bid1, signature: signatureBid1 };
 
       // CREATION OF BID2 => INVALID (amount KO)
       bid2 = {
@@ -148,9 +135,6 @@ describe('Auction', async function () {
         amount: AMOUNT_KO,
         value: VALUE_OK,
       };
-      signatureBid2 =
-        '0x55aed0833d1add1a40e8982a4c6de674a6cceb37002e0a8e463feb40f82e30f7437c0418c3eba16edab65692557b3ca9449b06e7916bd9efae72acc646ee186e1c';
-      signedBid2 = { ...bid2, signature: signatureBid2 };
 
       // CREATION OF BID3 => INVALID (value KO)
       bid3 = {
@@ -162,9 +146,6 @@ describe('Auction', async function () {
         amount: AMOUNT_OK,
         value: VALUE_KO,
       };
-      signatureBid3 =
-        '0x55aed0833d1add1a40e8982a4c6de674a6cceb37002e0a8e463feb40f82e30f7437c0418c3eba16edab65692557b3ca9449b06e7916bd9efae72acc646ee186e1c';
-      signedBid3 = { ...bid3, signature: signatureBid3 };
 
       // CREATION OF BID4 => INVALID (signer is not bidder)
       bid4 = {
@@ -176,9 +157,6 @@ describe('Auction', async function () {
         amount: AMOUNT_OK,
         value: VALUE_OK,
       };
-      signatureBid4 =
-        '0x55aed0833d1add1a40e8982a4c6de674a6cceb37002e0a8e463feb40f82e30f7437c0418c3eba16edab65692557b3ca9449b06e7916bd9efae72acc646ee186e1c';
-      signedBid4 = { ...bid4, signature: signatureBid4 };
 
       // PREPARE WETH
       await auction.connect(bidder).deposit({ value: VALUE, gasPrice: GAS_PRICE });
@@ -187,7 +165,7 @@ describe('Auction', async function () {
 
     describe('acceptBid', async function () {
       it(`reverts if not creator`, async function () {
-        await expect(auction.connect(alice).acceptBid(signedBid1)).to.be.revertedWith('Auction : not creator');
+        await expect(auction.connect(alice).acceptBid(bid1, v, r, s)).to.be.revertedWith('Auction : not creator');
       });
       it(`verifies signature bid`, async function () {
         // SEE ./Signature-test.js
@@ -195,17 +173,17 @@ describe('Auction', async function () {
       it(`reverts if signer is not bidder`, async function () {
         await auction.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE });
         await auction.connect(alice).approve(creator.address, VALUE_OK);
-        await expect(auction.connect(creator).acceptBid(signedBid4)).to.be.revertedWith(
+        await expect(auction.connect(creator).acceptBid(bid4, v, r, s)).to.be.revertedWith(
           'Auction : bidder did not sign this transaction'
         );
       });
       it(`reverts if bid value is lower than voucher price * amount`, async function () {
-        await expect(auction.connect(creator).acceptBid(signedBid3)).to.be.revertedWith(
+        await expect(auction.connect(creator).acceptBid(bid3, v, r, s)).to.be.revertedWith(
           'Auction : payment must be higher than minimum price'
         );
       });
       it(`reverts if bid amount is lower than voucher supply`, async function () {
-        await expect(auction.connect(creator).acceptBid(signedBid2)).to.be.revertedWith(
+        await expect(auction.connect(creator).acceptBid(bid2, v, r, s)).to.be.revertedWith(
           'Auction : can not buy more than stock'
         );
       });
@@ -215,47 +193,47 @@ describe('Auction', async function () {
       describe(`changes WETH balances`, async function () {
         it(`charges bid amount to buyer`, async function () {
           const initialBalance = await auction.balanceOf(bidder.address);
-          await auction.connect(creator).acceptBid(signedBid1);
+          await auction.connect(creator).acceptBid(bid1, v, r, s);
           expect(await auction.balanceOf(bidder.address)).to.equals(initialBalance - VALUE_OK);
         });
         it(`redirects bid amount to seller`, async function () {
           const initialBalance = await auction.balanceOf(creator.address);
-          await auction.connect(creator).acceptBid(signedBid1);
+          await auction.connect(creator).acceptBid(bid1, v, r, s);
           expect(await auction.balanceOf(creator.address)).to.equals(initialBalance + VALUE_OK_MINUS_5PERC);
         });
         it(`charges gas fee for transaction to seller`, async function () {
-          const tx = await auction.connect(creator).acceptBid(signedBid1, { gasPrice: GAS_PRICE });
+          const tx = await auction.connect(creator).acceptBid(bid1, v, r, s, { gasPrice: GAS_PRICE });
           expect(tx).to.changeEtherBalance(creator, 0, { includeFee: true });
         });
         it(`charges 5% fees from seller to owner`, async function () {
           const initialBalance = await auction.balanceOf(owner.address);
-          await auction.connect(creator).acceptBid(signedBid1);
+          await auction.connect(creator).acceptBid(bid1, v, r, s);
           expect(await auction.balanceOf(owner.address)).to.equals(initialBalance + VALUE_OK - VALUE_OK_MINUS_5PERC);
         });
       });
       it(`emits BidAccepted event`, async function () {
-        await expect(auction.connect(creator).acceptBid(signedBid1))
+        await expect(auction.connect(creator).acceptBid(bid1, v, r, s))
           .to.emit(auction, 'BidAccepted')
-          .withArgs(creator.address, signedBid1.tokenId.toString());
+          .withArgs(creator.address, bid1.tokenId.toString());
       });
     });
 
     describe('declineBid', async function () {
       it(`reverts if not creator`, async function () {
-        await expect(auction.connect(alice).declineBid(signedBid1)).to.be.revertedWith('Auction : not creator');
+        await expect(auction.connect(alice).declineBid(bid1, v, r, s)).to.be.revertedWith('Auction : not creator');
       });
       it(`verifies signature bid`, async function () {
         // SEE ./Signature-test.js
       });
       it(`reverts if signer is not bidder`, async function () {
-        await expect(auction.connect(creator).declineBid(signedBid4)).to.be.revertedWith(
+        await expect(auction.connect(creator).declineBid(bid4, v, r, s)).to.be.revertedWith(
           'Auction : bidder did not sign this transaction'
         );
       });
       it(`emits BidDeclined event`, async function () {
-        await expect(auction.connect(creator).declineBid(signedBid1))
+        await expect(auction.connect(creator).declineBid(bid1, v, r, s))
           .to.emit(auction, 'BidDeclined')
-          .withArgs(creator.address, signedBid1.tokenId.toString());
+          .withArgs(creator.address, bid1.tokenId.toString());
       });
     });
   });
