@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/solenepettier/Desktop/sacred-place/contracts/Auction.sol": {
-      "lastModificationDate": 1634902790842,
-      "contentHash": "d54112b2eb1a5321a3bb793a97c494fa",
+      "lastModificationDate": 1635595727423,
+      "contentHash": "5285f33b7d35c8b27f7d38385867a03c",
       "sourceName": "contracts/Auction.sol",
       "solcConfig": {
         "version": "0.8.0",

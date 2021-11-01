@@ -27,7 +27,7 @@ contract Auction is ERC20, Ownable {
         address placeAddress,
         address signatureAddress,
         address owner
-    ) ERC20("WrappedEther", "WETH") Ownable() {
+    ) ERC20("WrappedBNB", "WBNB") Ownable() {
         _place = Place(placeAddress);
         _signature = Signature(signatureAddress);
         transferOwnership(owner);
