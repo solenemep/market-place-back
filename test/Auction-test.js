@@ -8,18 +8,19 @@ const { BigNumber } = require('ethers');
 const { ethers } = require('hardhat');
 
 describe('Auction', async function () {
-  let Auction, auction, Place, place, Signature, signature;
+  let Auction, auction, WToken, wToken, Place, place, Signature, signature;
   let deployer, owner, developer, creator, bidder, alice, bob;
 
   const URI = 'ipfs://{id}';
-  const NAME = 'WrappedEther';
-  const SYMBOL = 'WETH';
 
   const VALUE = 50;
   const GAS_PRICE = 1000000000;
 
   beforeEach(async function () {
     [deployer, owner, developer, creator, bidder, alice, bob] = await ethers.getSigners();
+    WToken = await ethers.getContractFactory('WToken');
+    wToken = await WToken.connect(developer).deploy();
+    await wToken.deployed();
     Signature = await ethers.getContractFactory('Signature');
     signature = await Signature.connect(deployer).deploy(97);
     await signature.deployed();
@@ -27,70 +28,22 @@ describe('Auction', async function () {
     place = await Place.connect(deployer).deploy(URI);
     await place.deployed();
     Auction = await ethers.getContractFactory('Auction');
-    auction = await Auction.connect(developer).deploy(place.address, signature.address, owner.address);
+    auction = await Auction.connect(developer).deploy(wToken.address, place.address, signature.address, owner.address);
     await auction.deployed();
   });
 
   describe('constructor', async function () {
-    it(`sets signature address`, async function () {
-      expect(await auction.signature()).to.equal(signature.address);
+    it(`sets wToken address`, async function () {
+      expect(await auction.wToken()).to.equal(wToken.address);
     });
     it(`sets place address`, async function () {
       expect(await auction.place()).to.equal(place.address);
     });
+    it(`sets signature address`, async function () {
+      expect(await auction.signature()).to.equal(signature.address);
+    });
     it(`sets ownership`, async function () {
       expect(await auction.owner()).to.equal(owner.address);
-    });
-    it(`sets ERC20 name and symbol`, async function () {
-      expect(await auction.name()).to.equal(NAME);
-      expect(await auction.symbol()).to.equal(SYMBOL);
-    });
-  });
-  describe('receive', async function () {
-    it('transfers directly', async function () {
-      expect(
-        await alice.sendTransaction({ to: auction.address, value: VALUE, gasPrice: GAS_PRICE })
-      ).to.changeEtherBalance(auction, VALUE);
-    });
-  });
-  describe('deposit', async function () {
-    it('changes ETH balances', async function () {
-      const tx = await auction.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE });
-      expect(tx).to.changeEtherBalance(alice, -VALUE);
-      expect(tx).to.changeEtherBalance(auction, VALUE);
-    });
-    it('changes WETH balances', async function () {
-      await auction.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE });
-      expect(await auction.balanceOf(alice.address)).to.equal(VALUE);
-    });
-    it('emits Deposited event', async function () {
-      await expect(auction.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE }))
-        .to.emit(auction, 'Deposited')
-        .withArgs(alice.address, VALUE);
-    });
-  });
-  describe('withdraw', async function () {
-    it('reverts if balance < amount', async function () {
-      await expect(auction.connect(alice).withdraw(VALUE)).to.be.revertedWith(
-        'Auction : you can not withdraw more than you have'
-      );
-    });
-    it('changes ETH balances', async function () {
-      await auction.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE });
-      const tx = await auction.connect(alice).withdraw(VALUE);
-      expect(tx).to.changeEtherBalance(alice, VALUE);
-      expect(tx).to.changeEtherBalance(auction, -VALUE);
-    });
-    it('changes WETH balances', async function () {
-      await auction.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE });
-      await auction.connect(alice).withdraw(VALUE);
-      expect(await auction.balanceOf(alice.address)).to.equal(0);
-    });
-    it('emits Withdrawed event', async function () {
-      await auction.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE });
-      await expect(auction.connect(alice).withdraw(VALUE))
-        .to.emit(auction, 'Withdrawed')
-        .withArgs(alice.address, VALUE);
     });
   });
   describe('bid functions', async function () {
@@ -105,9 +58,9 @@ describe('Auction', async function () {
     const VALUE_OK_MINUS_5PERC = 19;
     const VALUE_KO = 4;
 
-    const v = 1;
-    const r = 0x0000000000000000000000000000000000000000000000000000000061626364;
-    const s = 0x0000000000000000000000000000000000000000000000000000000061626364;
+    const v = 27;
+    const r = 0x33a9c2884c5d046ef602ad3a9e11a8bb2be3901617cda541bfe6b761dc84203e;
+    const s = 0x64600619dcdc57ce82abcd69c91f0069e68215f512f0c7be6b6a56daf44a62a4;
 
     beforeEach(async function () {
       creatorAddress = creator.address;
@@ -159,8 +112,8 @@ describe('Auction', async function () {
       };
 
       // PREPARE WETH
-      await auction.connect(bidder).deposit({ value: VALUE, gasPrice: GAS_PRICE });
-      await auction.connect(bidder).approve(creator.address, VALUE_OK);
+      await wToken.connect(bidder).deposit({ value: VALUE, gasPrice: GAS_PRICE });
+      await wToken.connect(bidder).approve(auction.address, VALUE_OK);
     });
 
     describe('acceptBid', async function () {
@@ -171,8 +124,8 @@ describe('Auction', async function () {
         // SEE ./Signature-test.js
       });
       it(`reverts if signer is not bidder`, async function () {
-        await auction.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE });
-        await auction.connect(alice).approve(creator.address, VALUE_OK);
+        await wToken.connect(alice).deposit({ value: VALUE, gasPrice: GAS_PRICE });
+        await wToken.connect(alice).approve(auction.address, VALUE_OK);
         await expect(auction.connect(creator).acceptBid(bid4, v, r, s)).to.be.revertedWith(
           'Auction : bidder did not sign this transaction'
         );
@@ -192,23 +145,23 @@ describe('Auction', async function () {
       });
       describe(`changes WETH balances`, async function () {
         it(`charges bid amount to buyer`, async function () {
-          const initialBalance = await auction.balanceOf(bidder.address);
+          const initialBalance = await wToken.balanceOf(bidder.address);
           await auction.connect(creator).acceptBid(bid1, v, r, s);
-          expect(await auction.balanceOf(bidder.address)).to.equals(initialBalance - VALUE_OK);
+          expect(await wToken.balanceOf(bidder.address)).to.equals(initialBalance - VALUE_OK);
         });
         it(`redirects bid amount to seller`, async function () {
-          const initialBalance = await auction.balanceOf(creator.address);
+          const initialBalance = await wToken.balanceOf(creator.address);
           await auction.connect(creator).acceptBid(bid1, v, r, s);
-          expect(await auction.balanceOf(creator.address)).to.equals(initialBalance + VALUE_OK_MINUS_5PERC);
+          expect(await wToken.balanceOf(creator.address)).to.equals(initialBalance + VALUE_OK_MINUS_5PERC);
         });
         it(`charges gas fee for transaction to seller`, async function () {
           const tx = await auction.connect(creator).acceptBid(bid1, v, r, s, { gasPrice: GAS_PRICE });
           expect(tx).to.changeEtherBalance(creator, 0, { includeFee: true });
         });
         it(`charges 5% fees from seller to owner`, async function () {
-          const initialBalance = await auction.balanceOf(owner.address);
+          const initialBalance = await wToken.balanceOf(owner.address);
           await auction.connect(creator).acceptBid(bid1, v, r, s);
-          expect(await auction.balanceOf(owner.address)).to.equals(initialBalance + VALUE_OK - VALUE_OK_MINUS_5PERC);
+          expect(await wToken.balanceOf(owner.address)).to.equals(initialBalance + VALUE_OK - VALUE_OK_MINUS_5PERC);
         });
       });
       it(`emits BidAccepted event`, async function () {

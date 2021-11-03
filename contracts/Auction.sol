@@ -1,33 +1,33 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+import "./WToken.sol";
 import "./Place.sol";
 import "./Signature.sol";
 
-contract Auction is ERC20, Ownable {
+contract Auction is Ownable {
     using SafeMath for uint256;
     using Address for address payable;
 
+    WToken private _wToken;
     Place private _place;
     Signature private _signature;
 
     // Events
-    event Deposited(address indexed sender, uint256 amount);
-    event Withdrawed(address indexed sender, uint256 amount);
     event BidAccepted(address indexed sender, uint256 tokenId);
     event BidDeclined(address indexed sender, uint256 tokenId);
 
     constructor(
+        address wTokenAddress,
         address placeAddress,
         address signatureAddress,
         address owner
-    ) ERC20("WrappedBNB", "WBNB") Ownable() {
+    ) Ownable() {
+        _wToken = WToken(wTokenAddress);
         _place = Place(placeAddress);
         _signature = Signature(signatureAddress);
         transferOwnership(owner);
@@ -36,28 +36,6 @@ contract Auction is ERC20, Ownable {
     modifier isCreator(Signature.Bid calldata bid) {
         require(bid.creator == msg.sender, "Auction : not creator");
         _;
-    }
-
-    receive() external payable {
-        _deposit(msg.sender, msg.value);
-    }
-
-    function deposit() public payable {
-        _deposit(msg.sender, msg.value);
-    }
-
-    /// @notice Allow user to switch ETH to WETH
-    function _deposit(address sender, uint256 value) private {
-        _mint(sender, value);
-        emit Deposited(sender, value);
-    }
-
-    /// @notice Allow user to switch WETH to ETH
-    function withdraw(uint256 amount) public {
-        require(balanceOf(msg.sender) >= amount, "Auction : you can not withdraw more than you have");
-        _burn(msg.sender, amount);
-        payable(msg.sender).sendValue(amount);
-        emit Withdrawed(msg.sender, amount);
     }
 
     function acceptBid(
@@ -74,9 +52,9 @@ contract Auction is ERC20, Ownable {
         // redirects bid amount to seller wallet
         // charges gas fee for transaction from seller => paid accepting bid (msg.sender)
         // charges 5% service fee of bid price => to OWNER of contrat
-        transferFrom(bid.bidder, bid.creator, bid.value);
         uint256 charges = bid.value.mul(5).div(100);
-        transfer(owner(), charges);
+        _wToken.transferFrom(bid.bidder, bid.creator, bid.value - charges);
+        _wToken.transferFrom(bid.bidder, owner(), charges);
         _place.mintAndTransfer(bid.tokenId, bid.creator, bid.bidder, bid.amount);
         emit BidAccepted(msg.sender, bid.tokenId);
     }
@@ -91,11 +69,15 @@ contract Auction is ERC20, Ownable {
         emit BidDeclined(msg.sender, bid.tokenId);
     }
 
-    function signature() public view returns (Signature) {
-        return _signature;
+    function wToken() public view returns (WToken) {
+        return _wToken;
     }
 
     function place() public view returns (Place) {
         return _place;
+    }
+
+    function signature() public view returns (Signature) {
+        return _signature;
     }
 }

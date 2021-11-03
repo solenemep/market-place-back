@@ -9,6 +9,9 @@
   },
   "Auction": {
     "rinkeby": { "address": "0xf3428306Ad2113C7F6b03a626833e8aFb45708cA" },
-    "BSCtestnet": { "address": "0x182Af5bF57C503648599B6aB2f32Cff405571fc2" }
+    "BSCtestnet": { "address": "0x2f1C4Cb1e654c2ec5bFdF1b1518aAF5813185D01" }
+  },
+  "WToken": {
+    "BSCtestnet": { "address": "0xF977071F8D6F949649D0a49aE0D0F93b58056F0d" }
   }
 }
